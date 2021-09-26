@@ -88,7 +88,7 @@ class reluActivators(object):
 class maxpoolingLayer(object):
     def __init__(self, size):
         self.poolSize = size
-        
+
     def maxpooling(self, data):
         self.output = np.zeros(data.shape[0], data.shape[-2], data.shape[-1])
         for i in range(len(self.output)):
@@ -106,16 +106,20 @@ class maxpoolingLayer(object):
 class normalizationLayer:
     def normalize(self, data):
         # data is 4D array
-        inputSize = (data.shape[-2], data.shape[-1])
+        self.dataSize = data.shape
+        imageSize = (data.shape[-2], data.shape[-1]) # shold be improved
         data = np.reshape(data, (data.shape[0], data.shape[-2]*data.shape[-1]))
+        # reshape to fit apply_along_axis
+        sqrt = lambda x: np.sqrt(np.sum((x- np.mean(x))**2)/(imageSize[0]*imageSize[1]))
         def norm(image):
-            normalized_image = (image - np.mean(image)) / np.sqrt(np.sum(image**2))
+            normalized_image = (image - np.mean(image)) / sqrt(image)
             return normalized_image
-        sqrt = lambda x: np.sqrt(np.sum(x**2))
-        self.sqrt = np.apply_along_axis(sqrt, 1, data)
-        return np.reshape(np.apply_along_axis(norm, 1, data), (data.shape[0], inputSize[0], inputSize[1]))
+        
+        self.standardDeviation = np.apply_along_axis(sqrt, 1, data) # save the sqrt for backward
+        return np.reshape(np.apply_along_axis(norm, 1, data), self.dataSize)
     
     def backward(self, output):
-        
-        return 
+        # d(output)/d(normalization)
+        return ((1/self.standardDeviation) * np.ones(self.dataSize).T).T # gradient with respect to input
+
     
