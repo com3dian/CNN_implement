@@ -86,23 +86,44 @@ class reluActivators(object):
         return 1 if output > 0 else 0 # gradient with respect to input
     
 class maxpoolingLayer(object):
+    # without stride 
+    # always zero padding
     def __init__(self, size):
         self.poolSize = size
-
+        
     def maxpooling(self, data):
-        self.output = np.zeros(data.shape[0], data.shape[-2], data.shape[-1])
-        for i in range(len(self.output)):
-            # element-wisely maxpooling
-            for m in range(data.shape[-2] - self.poolSize[0]):
-                for n in range(data.shape[-2] - self.poolSize[0]):
-                    self.output[i, m, n] = 0
-                    
-        return 0
+        # data is 4D array
+        self.shape = data.shape #data shape
+        def maxFind(image):
+            # name is shit
+            image = np.reshape(image, (self.shape[-2], self.shape[-1]))
+            self.output = np.zeros(image.shape)# initialize
+            for m in range(image.shape[-2] - self.poolSize[0]):
+                for n in range(image.shape[-1] - self.poolSize[1]):
+                    imageSquare = image[m:(m+self.poolSize[0]), n:(n+self.poolSize[1])] # somehow stupid
+                    self.output[m, n] = np.max(imageSquare)
+            return self.output
+        
+        data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]*data.shape[3]))
+        return np.reshape(np.apply_along_axis(maxFind, 1, data), self.shape)
     
     def backward(self, output):
+        self.shape = output.shape #data shape
+        def maxBP(image):
+            # name is shit
+            image = np.reshape(image, (self.shape[-2], self.shape[-1]))
+            grad = np.zeros(image.shape) # save for backward
+            for m in range(image.shape[-2] - self.poolSize[0]):
+                for n in range(image.shape[-1] - self.poolSize[1]):
+                    imageSquare = image[m:(m+self.poolSize[0]), n:(n+self.poolSize[1])] # somehow stupid
+                    grad[np.where(imageSquare == np.max(imageSquare) )[0]+m, 
+                              np.where(imageSquare == np.max(imageSquare) )[1]+n] = 1
+            return grad
         
-        return 0
-    
+        data = np.reshape(output, (output.shape[0]*output.shape[1], output.shape[2]*output.shape[3]))
+        return np.reshape(np.apply_along_axis(maxBP, 1, data), self.shape)
+
+
 class normalizationLayer:
     def normalize(self, data):
         # data is 4D array
